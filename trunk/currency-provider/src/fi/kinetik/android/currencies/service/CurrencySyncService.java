@@ -19,6 +19,7 @@ import android.app.IntentService;
 import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.util.Log;
@@ -46,6 +47,12 @@ public class CurrencySyncService extends IntentService {
      * result code RESULT_CODE_ERROR.
      */
     public static final String EXTRA_ERROR_MESSAGE = "_errorMessage";
+
+    /**
+     * Intent extra to force checking for new updates even though data is 
+     * considered up-to-date according to sync interval.
+     */
+    public static final String EXTRA_FORCE = "_force";
 
     /**
      * Event code sent to ResultReceiver when service starts processing intent.
@@ -80,6 +87,17 @@ public class CurrencySyncService extends IntentService {
 
     private static final String NAME = "ConversionSyncService";
 
+    private static final String PREFERENCES_NAME = NAME;
+
+    private static final String PREF_LAST_SYNC = "lastSync";
+
+    private static final String PREF_SYNC_INTERVAL = "syncInterval";
+
+    /**
+     * Default interval for executing sync. 6 hours.
+     */
+    public static final long DEFAULT_SYNC_INTERVAL = 1000 * 60 * 60 * 6;
+
     private static final String TAG = NAME;
 
     /**
@@ -93,6 +111,8 @@ public class CurrencySyncService extends IntentService {
     private ResultReceiver mReceiver;
 
     private ContentResolver mResolver;
+
+    private SharedPreferences mPreferences;
 
     public CurrencySyncService() {
 	super(NAME);
@@ -113,6 +133,7 @@ public class CurrencySyncService extends IntentService {
 	}
 
 	mResolver = getContentResolver();
+	mPreferences = getSharedPreferences(PREFERENCES_NAME, MODE_PRIVATE);
     }
 
     @Override
@@ -127,18 +148,20 @@ public class CurrencySyncService extends IntentService {
 	    return;
 	}
 
+	if (isUpToDate(intent)) {
+	    Log.d(TAG, "rates up to date, not synching...");
+	    sendEvent(RESULT_CODE_FINISHED);
+	    return;
+	}
+
 	mOperations.clear();
 
 	RatesSpi spi = mFactory.newSpi();
 
 	try {
 
-	    long startTime = System.currentTimeMillis();
-	    
 	    // retrieve new data
 	    spi.loadData(mOperations);
-	    
-	    Log.d(TAG, "data loaded in ms" + (System.currentTimeMillis() - startTime));
 
 	    // if we have any new rates, insert operation first to delete all
 	    // previous values
@@ -152,13 +175,11 @@ public class CurrencySyncService extends IntentService {
 		    spi.getProviderName(),
 		    System.currentTimeMillis(),
 		    1.0));
-	    
-	    startTime = System.currentTimeMillis();
 
 	    mResolver.applyBatch(CurrencyContract.CONTENT_AUTHORITY,
 		    mOperations);
-	    
-	    Log.d(TAG, "batch applied in ms" + (System.currentTimeMillis() - startTime));
+
+	    updateSyncTime();
 
 	    sendEvent(RESULT_CODE_FINISHED);
 
@@ -168,6 +189,42 @@ public class CurrencySyncService extends IntentService {
 	    sendEvent(RESULT_CODE_ERROR, e);
 
 	}
+
+    }
+
+    /**
+     * Returns true is last sync is within set interval and this request
+     * does not have force set.
+     * 
+     * @param intent
+     * @return
+     */
+    private boolean isUpToDate(Intent intent) {
+
+	if (intent.hasExtra(EXTRA_FORCE)) {
+	    return false;
+	}
+
+	final long lastSyncMillis = mPreferences.getLong(PREF_LAST_SYNC, -1);
+	final long syncInterval = mPreferences.getLong(PREF_SYNC_INTERVAL,
+		DEFAULT_SYNC_INTERVAL);
+
+	if (lastSyncMillis == -1
+		|| (System.currentTimeMillis() - lastSyncMillis) > syncInterval) {
+	    return false;
+	} else {
+	    return true;
+	}
+
+    }
+
+    /**
+     * Updates last sync time to current time millis,
+     */
+    private void updateSyncTime() {
+
+	mPreferences.edit().putLong(PREF_LAST_SYNC, System.currentTimeMillis()).
+		commit();
 
     }
 

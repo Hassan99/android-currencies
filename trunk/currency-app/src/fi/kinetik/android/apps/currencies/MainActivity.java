@@ -10,11 +10,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.ResultReceiver;
 import android.provider.BaseColumns;
-import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 import fi.kinetik.android.currencies.provider.CurrencyContract.ConversionRate;
+import fi.kinetik.android.currencies.service.CurrencySyncService;
 
 public class MainActivity extends Activity {
 
@@ -39,7 +39,7 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onReceiveResult(final int resultCode,
 		final Bundle resultData) {
-	    
+
 	    if (resultCode == 100) {
 		mStatus.setText("started");
 	    } else if (resultCode == 200) {
@@ -74,9 +74,17 @@ public class MainActivity extends Activity {
 
     public void doSyncNow(View view) {
 
-	Intent intent = new Intent(
-		"fi.kinetik.currencies.intent.action.SYNC_CURRENCIES");
-	intent.putExtra("_resultReceiver", mReceiver);
+	Intent intent = new Intent(CurrencySyncService.SYNC_ACTION);
+	intent.putExtra(CurrencySyncService.EXTRA_RESULT_RECEIVER, mReceiver);
+	startService(intent);
+
+    }
+
+    public void doSyncForce(View view) {
+
+	Intent intent = new Intent(CurrencySyncService.SYNC_ACTION);
+	intent.putExtra(CurrencySyncService.EXTRA_RESULT_RECEIVER, mReceiver);
+	intent.putExtra(CurrencySyncService.EXTRA_FORCE, Boolean.TRUE);
 	startService(intent);
 
     }
