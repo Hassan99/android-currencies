@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+	<groupId>fi.kinetik.android.currencies</groupId>
+	<artifactId>android-currencies-parent</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <groupId>fi.kinetik.android.currencies</groupId>
+    <artifactId>android-currencies</artifactId>
+    <packaging>jar</packaging>
+    <name>Android Currencies - Lib</name>
+    
+    <scm>
+	<connection>scm:svn:https://android-currencies.googlecode.com/svn/trunk/</connection>
+	<url>http://code.google.com/p/android-currencies/source/browse/</url>
+    </scm>
+
+    <dependencies>
+        
+	<dependency>
+	    <groupId>android</groupId>
+	    <artifactId>android</artifactId>
+	    <scope>provided</scope>
+	</dependency>
+
+	<dependency>
+	    <groupId>junit</groupId>
+	    <artifactId>junit</artifactId>
+	    <scope>test</scope>
+	</dependency>
+                
+    </dependencies>
+
+    <build>
+        
+	<resources>
+	    <resource>                
+		<directory>res</directory>
+	    </resource>
+	</resources>
+        
+	<plugins>
+	    <plugin>
+		<groupId>com.jayway.maven.plugins.android.generation2</groupId>
+		<artifactId>android-maven-plugin</artifactId>
+		<extensions>true</extensions>
+	    </plugin>            
+        
+	</plugins>
+        
+    </build>
+
+</project>
